@@ -11,191 +11,20 @@
 #include <unistd.h>
 #endif
 
-void init_sim(sim_t *s)
-{
-	pthread_mutex_init(&(s->tx.lock), NULL);
-	//s->tx.error = 0;
 
-	pthread_mutex_init(&(s->gps.lock), NULL);
-	//s->gps.error = 0;
-	s->gps.ready = 0;
-	pthread_cond_init(&(s->gps.initialization_done), NULL);
+#include "limegps.h"
 
-	s->status = 0;
-	s->head = 0;
-	s->tail = 0;
-	s->sample_length = 0;
-
-	pthread_cond_init(&(s->fifo_write_ready), NULL);
-	pthread_cond_init(&(s->fifo_read_ready), NULL);
-
-	s->time = 0.0;
-}
-
-size_t get_sample_length(sim_t *s)
-{
-	long length;
-
-	length = s->head - s->tail;
-	if (length < 0)
-		length += FIFO_LENGTH;
-
-	return((size_t)length);
-}
-
-size_t fifo_read(int16_t *buffer, size_t samples, sim_t *s)
-{
-	size_t length;
-	size_t samples_remaining;
-	int16_t *buffer_current = buffer;
-
-	length = get_sample_length(s);
-
-	if (length < samples)
-		samples = length;
-
-	length = samples; // return value
-
-	samples_remaining = FIFO_LENGTH - s->tail;
-
-	if (samples > samples_remaining) {
-		memcpy(buffer_current, &(s->fifo[s->tail * 2]), samples_remaining * sizeof(int16_t) * 2);
-		s->tail = 0;
-		buffer_current += samples_remaining * 2;
-		samples -= samples_remaining;
-	}
-
-	memcpy(buffer_current, &(s->fifo[s->tail * 2]), samples * sizeof(int16_t) * 2);
-	s->tail += (long)samples;
-	if (s->tail >= FIFO_LENGTH)
-		s->tail -= FIFO_LENGTH;
-
-	return(length);
-}
-
-bool is_finished_generation(sim_t *s)
-{
-	return s->finished;
-}
-
-int is_fifo_write_ready(sim_t *s)
-{
-	int status = 0;
-
-	s->sample_length = get_sample_length(s);
-	if (s->sample_length < NUM_IQ_SAMPLES)
-		status = 1;
-
-	return(status);
-}
-
-void *tx_task(void *arg)
-{
-	sim_t *s = (sim_t *)arg;
-	size_t samples_populated;
-
-	while (1) {
-		int16_t *tx_buffer_current = s->tx.buffer;
-		unsigned int buffer_samples_remaining = SAMPLES_PER_BUFFER;
-
-		while (buffer_samples_remaining > 0) {
-			
-			pthread_mutex_lock(&(s->gps.lock));
-			while (get_sample_length(s) == 0)
-			{
-				pthread_cond_wait(&(s->fifo_read_ready), &(s->gps.lock));
-			}
-//			assert(get_sample_length(s) > 0);
-
-			samples_populated = fifo_read(tx_buffer_current,
-				buffer_samples_remaining,
-				s);
-			pthread_mutex_unlock(&(s->gps.lock));
-
-			pthread_cond_signal(&(s->fifo_write_ready));
-#if 0
-			if (is_fifo_write_ready(s)) {
-				/*
-				printf("\rTime = %4.1f", s->time);
-				s->time += 0.1;
-				fflush(stdout);
-				*/
-			}
-			else if (is_finished_generation(s))
-			{
-				goto out;
-			}
-#endif
-			// Advance the buffer pointer.
-			buffer_samples_remaining -= (unsigned int)samples_populated;
-			tx_buffer_current += (2 * samples_populated);
-		}
-
-		// If there were no errors, transmit the data buffer.
-		LMS_SendStream(&s->tx.stream, s->tx.buffer, SAMPLES_PER_BUFFER, NULL, 1000);
-		if (is_fifo_write_ready(s)) {
-			/*
-			printf("\rTime = %4.1f", s->time);
-			s->time += 0.1;
-			fflush(stdout);
-			*/
-		}
-		else if (is_finished_generation(s))
-		{
-			goto out;
-		}
-
-	}
-out:
-	return NULL;
-}
-
-int start_tx_task(sim_t *s)
-{
-	int status;
-
-	status = pthread_create(&(s->tx.thread), NULL, tx_task, s);
-
-	return(status);
-}
-
-int start_gps_task(sim_t *s)
-{
-	int status;
-
-	status = pthread_create(&(s->gps.thread), NULL, gps_task, s);
-
-	return(status);
-}
 
 void usage(char *progname)
 {
 	printf("Usage: %s [options]\n"
 		"Options:\n"
 		"  -e <gps_nav>     RINEX navigation file for GPS ephemerides (required)\n"
-		"  -u <user_motion> User motion file (dynamic mode)\n"
-		"  -g <nmea_gga>    NMEA GGA stream (dynamic mode)\n"
-		"  -l <location>    Lat,Lon,Hgt (static mode) e.g. 35.274,137.014,100\n"
-		"  -t <date,time>   Scenario start time YYYY/MM/DD,hh:mm:ss\n"
-		"  -T <date,time>   Overwrite TOC and TOE to scenario start time\n"
-		"  -d <duration>    Duration [sec] (max: %.0f)\n"
-		"  -a <rf_gain>     Normalized RF gain in [0.0 ... 1.0] (default: 0.1)\n"
-#ifdef WIN32
-		"  -i               Interactive mode: North='%c', South='%c', East='%c', West='%c'\n"
-#ifdef USE_GAMEPAD
-		"                   (Xbox gamepad: Turn Left=<, Turn Right=>, Forward=B)\n"
-#endif
-#endif
-		"  -I               Disable ionospheric delay for spacecraft scenario\n",
-		progname,
-#ifdef WIN32
-		((double)USER_MOTION_SIZE)/10.0, 
-		NORTH_KEY, SOUTH_KEY, EAST_KEY, WEST_KEY);
-#else
-		((double)USER_MOTION_SIZE)/10.0);
-#endif
+		"  -a <rf_gain>     Normalized RF gain in [0.0 ... 1.0] (default: 0.1)\n",
+		progname);
 	return;
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -228,76 +57,16 @@ int main(int argc, char *argv[])
 
 	// Options
 	int result;
-	double duration;
+//	double duration;
 	datetime_t t0;
 	double gain = 0.1;
 
-	while ((result=getopt(argc,argv,"e:u:g:l:T:t:d:a:iI"))!=-1)
+	while ((result=getopt(argc,argv,"e:a:"))!=-1)
 	{
 		switch (result)
 		{
 		case 'e':
 			strcpy(s.opt.navfile, optarg);
-			break;
-		case 'u':
-			strcpy(s.opt.umfile, optarg);
-			s.opt.nmeaGGA = FALSE;
-			s.opt.staticLocationMode = FALSE;
-			break;
-		case 'g':
-			strcpy(s.opt.umfile, optarg);
-			s.opt.nmeaGGA = TRUE;
-			s.opt.staticLocationMode = FALSE;
-			break;
-		case 'l':
-			// Static geodetic coordinates input mode
-			// Added by scateu@gmail.com
-			s.opt.nmeaGGA = FALSE;
-			s.opt.staticLocationMode = TRUE;
-			sscanf(optarg,"%lf,%lf,%lf",&s.opt.llh[0],&s.opt.llh[1],&s.opt.llh[2]);
-			s.opt.llh[0] /= R2D; // convert to RAD
-			s.opt.llh[1] /= R2D; // convert to RAD
-			break;
-		case 'T':
-			s.opt.timeoverwrite = TRUE;
-			if (strncmp(optarg, "now", 3)==0)
-			{
-				time_t timer;
-				struct tm *gmt;
-				
-				time(&timer);
-				gmt = gmtime(&timer);
-
-				t0.y = gmt->tm_year+1900;
-				t0.m = gmt->tm_mon+1;
-				t0.d = gmt->tm_mday;
-				t0.hh = gmt->tm_hour;
-				t0.mm = gmt->tm_min;
-				t0.sec = (double)gmt->tm_sec;
-
-				date2gps(&t0, &s.opt.g0);
-
-				break;
-			}
-		case 't':
-			sscanf(optarg, "%d/%d/%d,%d:%d:%lf", &t0.y, &t0.m, &t0.d, &t0.hh, &t0.mm, &t0.sec);
-			if (t0.y<=1980 || t0.m<1 || t0.m>12 || t0.d<1 || t0.d>31 ||
-				t0.hh<0 || t0.hh>23 || t0.mm<0 || t0.mm>59 || t0.sec<0.0 || t0.sec>=60.0)
-			{
-				printf("ERROR: Invalid date and time.\n");
-				exit(1);
-			}
-			t0.sec = floor(t0.sec);
-			date2gps(&t0, &s.opt.g0);
-			break;
-		case 'd':
-			duration = atof(optarg);
-			if (duration<0.0 || duration>((double)USER_MOTION_SIZE)/10.0)
-			{
-				printf("ERROR: Invalid duration.\n");
-				exit(1);
-			}
-			s.opt.iduration = (int)(duration*10.0+0.5);
 			break;
 		case 'a':
 			gain = atof(optarg);
@@ -305,12 +74,6 @@ int main(int argc, char *argv[])
 				gain = 0.0;
 			if (gain > 1.0)
 				gain = 1.0;
-			break;
-		case 'i':
-			s.opt.interactive = TRUE;
-			break;
-		case 'I':
-			s.opt.iono_enable = FALSE; // Disable ionospheric correction
 			break;
 		case ':':
 		case '?':
@@ -320,6 +83,23 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+
+
+	s.opt.timeoverwrite = TRUE;
+	time_t timer;
+	struct tm *gmt;
+	time(&timer);
+	gmt = gmtime(&timer);
+
+	t0.y = gmt->tm_year+1900;
+	t0.m = gmt->tm_mon+1;
+	t0.d = gmt->tm_mday;
+	t0.hh = gmt->tm_hour;
+	t0.mm = gmt->tm_min;
+	t0.sec = (double)gmt->tm_sec;
+
+	date2gps(&t0, &s.opt.g0);
+
 
 	if (s.opt.navfile[0]==0)
 	{
@@ -562,3 +342,4 @@ out:
 
 	return(0);
 }
+

@@ -100,3 +100,16 @@ extern void *gps_task(void *arg);
 extern int is_fifo_write_ready(sim_t *s);
 
 #endif
+
+void init_sim(sim_t *s);
+size_t get_sample_length(sim_t *s);
+size_t fifo_read(int16_t *buffer, size_t samples, sim_t *s);
+bool is_finished_generation(sim_t *s);
+int is_fifo_write_ready(sim_t *s);
+void *tx_task(void *arg);
+int start_tx_task(sim_t *s);
+int start_gps_task(sim_t *s);
+
+
+
+
