@@ -73,7 +73,7 @@ static int ahc_echo (void *cls,
 
 	double lat;
 	double lon;
-	double height;
+	double alt;
 
 	if(main_thread) {
 	    errMsg = ALREADY_STARTED_FMT;
@@ -81,26 +81,26 @@ static int ahc_echo (void *cls,
 	}
 
 	param_str = MHD_lookup_connection_value (connection, MHD_GET_ARGUMENT_KIND, "lat");
-	if(strnlen(param_str, MAX_PARAM_LEN) < 1) goto FAIL;
+	if(param_str == NULL || strnlen(param_str, MAX_PARAM_LEN) < 1) goto FAIL;
 	lat = strtod(param_str, &param_str_END);
 	if(lat >180 || lat < -180) goto FAIL;
 	if(param_str + strnlen(param_str, MAX_PARAM_LEN)!= param_str_END) goto FAIL;
 
 	param_str = MHD_lookup_connection_value (connection, MHD_GET_ARGUMENT_KIND, "lon");
-	if(strnlen(param_str, MAX_PARAM_LEN) < 1) goto FAIL;
+	if(param_str == NULL || strnlen(param_str, MAX_PARAM_LEN) < 1) goto FAIL;
 	lon = strtod(param_str, &param_str_END);
 	if(lon >180 || lon < -180) goto FAIL;
 	if(param_str + strnlen(param_str, MAX_PARAM_LEN)!= param_str_END) goto FAIL;
 
-	param_str = MHD_lookup_connection_value (connection, MHD_GET_ARGUMENT_KIND, "height");
-	if(strnlen(param_str, MAX_PARAM_LEN) < 1) goto FAIL;
-	height = strtod(param_str, &param_str_END);
-	if(height >180 || height < -180) goto FAIL;
+	param_str = MHD_lookup_connection_value (connection, MHD_GET_ARGUMENT_KIND, "alt");
+	if(param_str == NULL || strnlen(param_str, MAX_PARAM_LEN) < 1) goto FAIL;
+	alt = strtod(param_str, &param_str_END);
+	if(alt >15000 || alt < -10000) goto FAIL;
 	if(param_str + strnlen(param_str, MAX_PARAM_LEN)!= param_str_END) goto FAIL;
 
 	settings->s->opt.llh[0] = lat / R2D;
 	settings->s->opt.llh[1] = lon / R2D;
-	settings->s->opt.llh[2] = height / R2D;
+	settings->s->opt.llh[2] = alt;
 	settings->s->finished = false;
 
 	settings->s->opt.g0.week = -1;
