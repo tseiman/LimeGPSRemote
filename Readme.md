@@ -1,24 +1,24 @@
-# LimeGPS
+# LimeGPSRemote
 
-Yet another crude experimental implimentation of [gps-sdr-sim](https://github.com/osqzss/gps-sdr-sim) for real-time signal generation.
-The code works with LimeSDR and has been tested on Windows 10 and Ubuntu 17.10. The default TX antenna port is TX1_1.
+Based on [LimeGPS](https://github.com/osqzss/LimeGPS) which is based on [gps-sdr-sim](https://github.com/osqzss/gps-sdr-sim) for real-time GPS signal generation.
+The code works with LimeSDR and has been tested on Ubuntu 18.04. The default TX antenna port is TX1_1. In Opposite to LimGPS this version has a little less options.
+Starts time generation always from now. No Dynamic mode or any motion simulation.
+Instead this version allows to be remote controlled via HTTP (no security!!).
+
+http://myhost.localdomain:8080/start?lon=45.23456&lat=11.23456&alt=100  e.g. starts the generation with given Latitude, Longitude and Altitude. 
+http://myhost.localdomain:8080/stop stops the generation. Stop must be executed before new start. 
 
 ```
-Usage: limegps [options]
+Usage: LimeGPSServer [options]
 Options:
   -e <gps_nav>     RINEX navigation file for GPS ephemerides (required)
-  -u <user_motion> User motion file (dynamic mode)
-  -g <nmea_gga>    NMEA GGA stream (dynamic mode)
-  -l <location>    Lat,Lon,Hgt (static mode) e.g. 35.274,137.014,100
-  -t <date,time>   Scenario start time YYYY/MM/DD,hh:mm:ss
-  -T <date,time>   Overwrite TOC and TOE to scenario start time
-  -d <duration>    Duration [sec] (max: 86400)
   -a <rf_gain>     Normalized RF gain in [0.0 ... 1.0] (default: 0.1)
-  -i               Interactive mode: North='w', South='s', East='d', West='a'
-  -I               Disable ionospheric delay for spacecraft scenario
 ```
 
+The server is not deamonizing and can be stopped by press [q]<ENTER>
+
 ### Build on Windows with Visual Studio
+NOT TESTED:
 
 Follow the instructions at [Lime Suite wiki page](https://wiki.myriadrf.org/Lime_Suite) and install the Pothos SDR development environment.
 
@@ -50,23 +50,22 @@ $ sudo add-apt-repository -y ppa:myriadrf/drivers
 $ sudo apt-get update
 $ sudo apt-get install limesuite liblimesuite-dev limesuite-udev limesuite-images
 $ sudo apt-get install soapysdr soapysdr-module-lms7
+$ sudo apt-get install libmicrohttpd-dev
 ```
 
-2. Clone and build LimeGPS.
+2. Clone and build LimeGPSRemote.
 
  ```
-$ git clone https://github.com/osqzss/LimeGPS
-$ cd LimeGPS
+$ git clone https://github.com/tseiman/LimeGPSRemote
+$ cd LimeGPSRemote
+$ cmake .
 $ make
 ```
 
 3. Test the simulator.
 
  ```
-$ ./LimeGPS -e brdc0350.18n
+$ ./LimeGPSServer -e brdc0350.18n
 ```
 
-### License
 
-Copyright &copy; 2018 Takuji Ebinuma  
-Distributed under the [MIT License](http://www.opensource.org/licenses/mit-license.php).
