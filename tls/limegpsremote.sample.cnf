@@ -47,7 +47,7 @@ req_extensions = my_extensions
 C = DE
 ST = Bavaria
 L = Munich
-O  = TSEI
+O  = TSEI LimeSDR
 CN = *.somedomain.local
 
 [ my_extensions ]

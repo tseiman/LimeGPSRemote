@@ -34,7 +34,7 @@ Generate the public root certificate (this must be installed to the browser or o
 Fill the questions according to your needs.
 
 ```
-$ openssl req -new -x509 -key limegpsremote.local.CA.key -out limegpsremote.local.CA.crt
+$ openssl req -new -x509 -days 3560 -key limegpsremote.local.CA.key -out limegpsremote.local.CA.crt
 You are about to be asked to enter information that will be incorporated
 into your certificate request.
 What you are about to enter is what is called a Distinguished Name or a DN.
@@ -78,7 +78,7 @@ The Subject's Distinguished Name is as follows
 countryName           :PRINTABLE:'DE'
 stateOrProvinceName   :ASN.1 12:'Bavaria'
 localityName          :ASN.1 12:'Munich'
-organizationName      :ASN.1 12:'TSEI'
+organizationName      :ASN.1 12:'TSEI LimeSDR'
 commonName            :ASN.1 12:'*.tsei.mdn'
 Certificate is to be certified until May 28 14:27:31 2023 GMT (365 days)
 Sign the certificate? [y/n]:y
