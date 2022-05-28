@@ -3,3 +3,7 @@ CMakeCache.txt
 CMakeFiles
 cmake_install.cmake
 Makefile
+tls/index*
+tls/limegpsremote.local.*
+tls/newcerts
+tls/serial*

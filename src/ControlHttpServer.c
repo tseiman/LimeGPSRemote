@@ -18,7 +18,7 @@
 #define ALREADY_STOPPED_FMT 	"{\"type\" : \"FAIL\", \"cause\": \"GPS SIM already stopped: %s\"}"
 #define FAIL_START_FMT 		"{\"type\" : \"FAIL\", \"cause\": \"Could not start GPS SIM Thread: %s\"}"
 
-#define MAX_PARAM_LEN 10
+#define MAX_PARAM_LEN 20
 
 
 static  pthread_t main_thread;
