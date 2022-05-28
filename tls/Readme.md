@@ -51,10 +51,15 @@ Common Name (e.g. server FQDN or YOUR name) []:.
 Email Address []:An optional company name []:.
 
 ```
+Copy the sample files limegpsremote.sample.cnf and limegpsremote.sample.server.extensions.cnf
+```
+cp limegpsremote.sample.cnf limegpsremote.local.cnf
+cp limegpsremote.sample.server.extensions.cnf limegpsremote.local.server.extensions.cnf
+```
 
 Genrate then the CSR (Certificate Signing Request) from:
 ```
-$ openssl req -new -out limegpsremote.local.server.csr -config limegpsremote.sample.cnf
+$ openssl req -new -out limegpsremote.local.server.csr -config limegpsremote.local.cnf
 Generating a RSA private key
 ............+++++
 ..............................................................................................................+++++
@@ -63,10 +68,10 @@ writing new private key to 'limegpsremote.local.server.key'
 ```
 Edit the 
 Now we sign the Server Certificate:
-Edit the hostname (DNS) and IP address (you can have multiple with IP.1=, IP.2=, IP.3 ... and DNS.1=, DNS.2=, DNS.3= ...) in *limegpsremote.sample.extensions.cnf* file.
+Edit the hostname (DNS) and IP address (you can have multiple with IP.1=, IP.2=, IP.3 ... and DNS.1=, DNS.2=, DNS.3= ...) in *limegpsremote.local.server.extensions.cnf* and *limegpsremote.local.cnf* file.
 
 ```
-openssl ca -config ca.cnf -out limegpsremote.local.server.crt -extfile limegpsremote.sample.server.extensions.cnf  -in limegpsremote.local.server.csr
+openssl ca -config ca.cnf -out limegpsremote.local.server.crt -extfile limegpsremote.local.server.extensions.cnf  -in limegpsremote.local.server.csr
 Using configuration from ca.cnf
 Check that the request matches the signature
 Signature ok

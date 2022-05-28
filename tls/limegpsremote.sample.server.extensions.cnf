@@ -3,5 +3,5 @@ subjectAltName=@my_subject_alt_names
 subjectKeyIdentifier = hash
 
 [ my_subject_alt_names ]
-DNS.1 = *.tsei.mdn
-IP.1 = 192.168.2.130
+DNS.1 = *.somedomain.local
+IP.1 = 192.168.0.123
