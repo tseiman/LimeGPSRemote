@@ -27,7 +27,11 @@ void usage(char *progname)
 	printf("Usage: %s [options]\n"
 		"Options:\n"
 		"  -e <gps_nav>     RINEX navigation file for GPS ephemerides (required)\n"
-		"  -a <rf_gain>     Normalized RF gain in [0.0 ... 1.0] (default: 0.1)\n",
+		"  -a <rf_gain>     Normalized RF gain in [0.0 ... 1.0] (default: 0.1)\n"
+		"  -k <tls key>     TLS key file, requires cert file as well. When set \n"
+		"                   together with certificate TLS is enabled\n"
+		"  -c <cert file>   TLS certificate file, requires key file as well.\n"
+		"                   When set together with key TLS is enabled\n",
 		progname);
 	return;
 }
@@ -43,6 +47,8 @@ int main(int argc, char *argv[]) {
 
     // Set default values
     sim_t s;
+    char *certFile = NULL;
+    char *keyFile = NULL;
 
     s.finished = false;
     s.opt.navfile[0] = 0;
@@ -61,6 +67,7 @@ int main(int argc, char *argv[]) {
     s.opt.interactive = FALSE;
     s.opt.timeoverwrite = FALSE;
     s.opt.iono_enable = TRUE;
+    
 
 
     // Options
@@ -69,10 +76,16 @@ int main(int argc, char *argv[]) {
 //    datetime_t t0;
     double gain = 0.1;
 
-    while ((result=getopt(argc,argv,"e:a:"))!=-1) {
+    while ((result=getopt(argc,argv,"e:a:k:c:"))!=-1) {
 	switch (result) {
 	    case 'e':
 		strcpy(s.opt.navfile, optarg);
+		break;
+	    case 'c':
+		certFile = optarg;
+		break;
+	    case 'k':
+		keyFile = optarg;
 		break;
 	    case 'a':
 		gain = atof(optarg);
@@ -93,8 +106,12 @@ int main(int argc, char *argv[]) {
 	exit(1);
     }
 
-//    runGPS(&s, gain);
-    runServer(&s, gain);
+    if((certFile == NULL) ^ (keyFile == NULL)) { // XOR - both files must be set
+	printf("ERROR: Either both - Certificate and key file is specified to enable HTTPS or none of them for HTTP\n");
+	exit(1);
+    }
+
+    runServer(&s, gain, keyFile, certFile);
     return(0);
 }
 
